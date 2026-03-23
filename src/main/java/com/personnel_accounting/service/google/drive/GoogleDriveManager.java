@@ -7,11 +7,14 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
@@ -22,14 +25,16 @@ public class GoogleDriveManager {
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     @Value("classpath:service_account_credentials.json")
-    private File credentialsFile;
+    private Resource credentialsResource;
 
     public Drive getInstance() throws GeneralSecurityException, IOException {
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 
-        GoogleCredential credentials = GoogleCredential.fromStream(
-                new FileInputStream(credentialsFile)).createScoped(Collections.singletonList(DRIVE));
+        try (InputStream is = credentialsResource.getInputStream()) {
+            GoogleCredential credentials = GoogleCredential.fromStream(is)
+                    .createScoped(Collections.singletonList(DRIVE));
 
-        return new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentials).build();
+            return new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, credentials).build();
+        }
     }
 }
